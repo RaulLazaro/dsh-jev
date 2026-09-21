@@ -11,6 +11,13 @@ outputs, failing tests, search results, candidate files, review comments —
 without pulling them all into the model's context or spawning a subagent to read
 them.
 
+Measured against the two things the harness does today, on the same task and the
+same data: **13x faster and 13.6x cheaper than a model at identical accuracy**, and
+**105x faster and ~120x cheaper than a subagent** (median subagent: 9 requests,
+48 s, $0.035). It *loses* to `grep` whenever the criterion is mechanical, so do
+not use it for that. The full evidence — including the use cases that were
+measured and then rejected — is in [`docs/MEASUREMENTS.md`](docs/MEASUREMENTS.md).
+
 ## What it registers
 
 | Surface | What it does |
@@ -20,20 +27,30 @@ them.
 
 ## Install
 
-The plugin is a DSH bundle: add the package and its patch to your profile, then
-restart the service.
+The package carries its own bundle patch, so installing it is one command:
 
-```yaml
-# ~/.dsh/profiles/web/cordis.patch.yml
-- insert:
-    - id: jev
-      name: dsh-jev
-      config:
-        enabled: true
-        provider: typesafe
+```bash
+dsh plugin --profile web add /path/to/dsh-jev
 ```
 
-Nothing else is required — the API key is entered in the UI, not here.
+That adds the dependency, appends `dsh-jev` to the profile's bundle list, and
+composes the row from [`cordis.patch.yml`](cordis.patch.yml). Confirm the
+composition without booting anything:
+
+```bash
+dsh --profile web --dump-config | grep -A4 'dsh-jev'
+# - id: jev
+#   name: dsh-jev
+#   config:
+#     enabled: true
+#     provider: typesafe
+```
+
+Then **restart the harness** to mount it — a running process does not pick up a
+new bundle row. Nothing else is required: the API key is entered in the UI, not
+in the composition.
+
+To remove it again: `dsh plugin --profile web remove dsh-jev`.
 
 ## Configure
 
@@ -129,6 +146,36 @@ Provider, model and limit fields can also be set directly in
 - A rejected credential (401/403) is reported with a pointer to
   Settings → Jev rather than a raw status code.
 - The Settings bridge is same-origin and **loopback-only**.
+
+## Verify it works
+
+After the restart, in order:
+
+1. **The card is there.** Settings → Plugins → **Jev** should appear with a
+   `key set` / `no key` badge.
+2. **The key round-trips.** Pick the provider, paste the key, **Save key**, then
+   **Test connection**. You get the resolved provider, model, latency, input
+   tokens and a couple of answers from a real request.
+3. **The tool is registered.** Ask the session to call `jev` on something small,
+   e.g.:
+
+   ```jsonc
+   {
+     "state": "### ITEM 1\nTypeError: x is undefined\n\n### ITEM 2\nAll 42 tests passed",
+     "questions": {
+       "item1_failed": { "type": "noul", "instructions": "Does ITEM 1 report a failure?" },
+       "worst": { "type": "choice", "instructions": "Which item failed?",
+                  "criteria": { "item1": "an exception", "item2": "a passing run" } }
+     }
+   }
+   ```
+
+   Expected: `item1_failed: 0.9x (yes)`, `item2` near `0.0x`, and `worst: item1`.
+4. **A misconfiguration fails usefully.** Switch to *Custom* with an empty base
+   URL: the tool must answer with a message naming Settings → Jev, not a raw
+   status code.
+5. **The bridge stays closed.** `curl -X POST http://10.0.0.100:3080/api/dsh-jev-settings/describe`
+   from another machine must answer `403 loopback requests only`.
 
 ## Development
 

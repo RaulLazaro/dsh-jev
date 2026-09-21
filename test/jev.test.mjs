@@ -326,7 +326,7 @@ test('isLoopbackRequest accepts only loopback peers', () => {
   assert.equal(isLoopbackRequest({ socket: { remoteAddress: '127.0.0.1' } }), true)
   assert.equal(isLoopbackRequest({ socket: { remoteAddress: '::1' } }), true)
   assert.equal(isLoopbackRequest({ socket: { remoteAddress: '::ffff:127.0.0.1' } }), true)
-  assert.equal(isLoopbackRequest({ socket: { remoteAddress: '10.0.0.100' } }), false)
+  assert.equal(isLoopbackRequest({ socket: { remoteAddress: '192.0.2.10' } }), false)
   assert.equal(isLoopbackRequest({ socket: {} }), false)
   assert.equal(isLoopbackRequest({}), false)
 })

@@ -3,6 +3,15 @@
   "version": "0.1.0",
   "description": "Ask Jev (TypeSafe System One) typed questions from DeepSeek Harness: batch judgements with probabilities, configured per user in Settings.",
   "type": "module",
+  "author": "Raúl Lázaro Sánchez (https://github.com/RaulLazaro)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RaulLazaro/dsh-jev.git"
+  },
+  "homepage": "https://github.com/RaulLazaro/dsh-jev#readme",
+  "bugs": {
+    "url": "https://github.com/RaulLazaro/dsh-jev/issues"
+  },
   "main": "lib/index.js",
   "exports": {
     ".": "./lib/index.js",
@@ -14,6 +23,9 @@
     "lib/client.js",
     "cordis.patch.yml"
   ],
+  "scripts": {
+    "test": "node --test"
+  },
   "keywords": [
     "deepseek-harness",
     "dsh",

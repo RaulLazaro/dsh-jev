@@ -1,7 +1,7 @@
 /**
  * Unit tests for the pure parts of dsh-jev.
  *
- * Run: node --test test/
+ * Run: node --test
  *
  * These cover the request shape, the provider resolution, the validation
  * messages a model will actually see, and the retry policy — the places where a
@@ -14,6 +14,7 @@ import {
   PROVIDERS,
   formatAnswers,
   isLoopbackRequest,
+  makeTool,
   resolveEndpoint,
   resolveApiKey,
   validateQuestions,
@@ -136,6 +137,105 @@ test('resolveApiKey survives a credentials store that throws', async () => {
     },
   }
   assert.equal(await resolveApiKey(broken, 'TYPESAFE_API_KEY', 'from-settings'), 'from-settings')
+})
+
+/** Run `body` with globalThis.fetch replaced, restoring it even on failure. */
+async function withFetchStub(impl, body) {
+  const original = globalThis.fetch
+  globalThis.fetch = impl
+  try {
+    return await body()
+  } finally {
+    globalThis.fetch = original
+  }
+}
+
+/**
+ * The tool takes the credentials *accessor*, and every call must read the
+ * service through it. Wiring the service in eagerly — or passing the accessor
+ * where the service is expected — made every real call fail with "no API key"
+ * while the Settings card's own probe still passed, because the probe invokes
+ * the accessor and the tool did not.
+ */
+test('the jev tool resolves its key through the credentials accessor', async () => {
+  const credentials = { resolve: async () => ({ value: 'from-store' }) }
+  const tool = makeTool(
+    () => credentials,
+    () => ({ provider: 'vercel-gateway' }),
+  )
+  const seen = []
+  await withFetchStub(
+    async (url, init) => {
+      seen.push({ url, authorization: init.headers.authorization })
+      return new Response(JSON.stringify({ answers: { q: { type: 'noul', noul: 1 } }, usage: {} }), { status: 200 })
+    },
+    async () => {
+      const result = await tool.execute({ state: 's', questions: { q: { type: 'noul', instructions: 'x' } } })
+      assert.equal(seen.length, 1)
+      assert.equal(seen[0].authorization, 'Bearer from-store')
+      assert.equal(seen[0].url, 'https://ai-gateway.vercel.sh/typesafe/v1/systemone')
+      assert.equal(result.answers.q.noul, 1)
+    },
+  )
+})
+
+test('the jev tool reads the credentials service lazily, per call', async () => {
+  const saved = process.env.TYPESAFE_API_KEY
+  delete process.env.TYPESAFE_API_KEY
+  let service
+  const tool = makeTool(
+    () => service,
+    () => ({ provider: 'typesafe' }),
+  )
+  await withFetchStub(
+    async () => new Response(JSON.stringify({ answers: {} }), { status: 200 }),
+    async () => {
+      // The service has not mounted yet: the call must fail loudly, not silently.
+      await assert.rejects(
+        tool.execute({ state: 's', questions: { q: { type: 'noul', instructions: 'x' } } }),
+        /no API key/,
+      )
+      // It mounts afterwards (cross-bundle order): the next call must see it.
+      service = { resolve: async () => ({ value: 'late' }) }
+      await tool.execute({ state: 's', questions: { q: { type: 'noul', instructions: 'x' } } })
+    },
+  )
+  if (saved === undefined) delete process.env.TYPESAFE_API_KEY
+  else process.env.TYPESAFE_API_KEY = saved
+})
+
+test('the jev tool still reports a genuinely missing key', async () => {
+  const saved = process.env.TYPESAFE_API_KEY
+  delete process.env.TYPESAFE_API_KEY
+  const tool = makeTool(
+    () => ({ resolve: async () => undefined }),
+    () => ({ provider: 'typesafe' }),
+  )
+  await assert.rejects(
+    tool.execute({ state: 's', questions: { q: { type: 'noul', instructions: 'x' } } }),
+    /no API key for provider "typesafe"/,
+  )
+  if (saved === undefined) delete process.env.TYPESAFE_API_KEY
+  else process.env.TYPESAFE_API_KEY = saved
+})
+
+test('the jev tool refuses a disabled tool and an oversized state', async () => {
+  const disabled = makeTool(
+    () => undefined,
+    () => ({ enabled: false }),
+  )
+  await assert.rejects(
+    disabled.execute({ state: 's', questions: { q: { type: 'noul', instructions: 'x' } } }),
+    /disabled in Settings/,
+  )
+  const tool = makeTool(
+    () => undefined,
+    () => ({ maxStateChars: 3 }),
+  )
+  await assert.rejects(
+    tool.execute({ state: 'too long', questions: { q: { type: 'noul', instructions: 'x' } } }),
+    /this plugin allows 3/,
+  )
 })
 
 test('callJev sends the TypeSafe body shape', async () => {

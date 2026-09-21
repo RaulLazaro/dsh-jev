@@ -27,10 +27,14 @@ measured and then rejected — is in [`docs/MEASUREMENTS.md`](docs/MEASUREMENTS.
 
 ## Install
 
-The package carries its own bundle patch, so installing it is one command:
+The package carries its own bundle patch, so installing it is one command.
+`dsh plugin` forwards to pnpm, so a local path, a git spec and a registry name
+all work:
 
 ```bash
-dsh plugin --profile web add /path/to/dsh-jev
+dsh plugin --profile web add /path/to/dsh-jev           # a local checkout
+dsh plugin --profile web add github:RaulLazaro/dsh-jev  # straight from GitHub
+dsh plugin --profile web add dsh-jev                    # from the registry, once published
 ```
 
 That adds the dependency, appends `dsh-jev` to the profile's bundle list, and
@@ -174,17 +178,19 @@ After the restart, in order:
 4. **A misconfiguration fails usefully.** Switch to *Custom* with an empty base
    URL: the tool must answer with a message naming Settings → Jev, not a raw
    status code.
-5. **The bridge stays closed.** `curl -X POST http://10.0.0.100:3080/api/dsh-jev-settings/describe`
+5. **The bridge stays closed.** `curl -X POST http://your-host:3080/api/dsh-jev-settings/describe`
    from another machine must answer `403 loopback requests only`.
 
 ## Development
 
 ```bash
-node --test test/
+npm test          # node --test
 ```
 
 The suite covers endpoint resolution, question validation messages, answer
-formatting, key precedence and the retry policy. `lib/index.js` has no runtime
+formatting, key precedence and the retry policy, plus the tool's own wiring:
+that it reads the credentials service through the lazy accessor on every call
+rather than capturing it once at registration. `lib/index.js` has no runtime
 dependency other than `@deepseek-ai/schemastery`.
 
 ## Licence

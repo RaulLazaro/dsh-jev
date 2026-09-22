@@ -190,8 +190,9 @@ npm test          # node --test
 The suite covers endpoint resolution, question validation messages, answer
 formatting, key precedence and the retry policy, plus the tool's own wiring:
 that it reads the credentials service through the lazy accessor on every call
-rather than capturing it once at registration. `lib/index.js` has no runtime
-dependency other than `@deepseek-ai/schemastery`.
+rather than capturing it once at registration. `lib/index.js` imports nothing
+but `@deepseek-ai/schemastery`, declared as a peer dependency along with
+`@deepseek-ai/cordis` — the host supplies both.
 
 ## Licence
 

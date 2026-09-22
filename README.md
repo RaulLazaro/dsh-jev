@@ -1,4 +1,4 @@
-# dsh-jev
+# dsh-jev-plugin
 
 Ask [Jev](https://typesafe.ai), a System One decision model, typed questions from
 DeepSeek Harness and get structured answers with probabilities.
@@ -34,19 +34,19 @@ The package carries its own bundle patch, so installing it is one command.
 all work:
 
 ```bash
-dsh plugin --profile web add /path/to/dsh-jev           # a local checkout
-dsh plugin --profile web add github:RaulLazaro/dsh-jev  # straight from GitHub
-dsh plugin --profile web add dsh-jev                    # from the registry, once published
+dsh plugin --profile web add /path/to/dsh-jev-plugin         # a local checkout
+dsh plugin --profile web add github:RaulLazaro/dsh-jev-plugin  # straight from GitHub
+dsh plugin --profile web add dsh-jev-plugin              # from the registry, once published
 ```
 
-That adds the dependency, appends `dsh-jev` to the profile's bundle list, and
+That adds the dependency, appends `dsh-jev-plugin` to the profile's bundle list, and
 composes the row from [`cordis.patch.yml`](cordis.patch.yml). Confirm the
 composition without booting anything:
 
 ```bash
-dsh --profile web --dump-config | grep -A4 'dsh-jev'
+dsh --profile web --dump-config | grep -A4 'dsh-jev-plugin'
 # - id: jev
-#   name: dsh-jev
+#   name: dsh-jev-plugin
 #   config:
 #     enabled: true
 #     provider: typesafe
@@ -56,7 +56,7 @@ Then **restart the harness** to mount it — a running process does not pick up 
 new bundle row. Nothing else is required: the API key is entered in the UI, not
 in the composition.
 
-To remove it again: `dsh plugin --profile web remove dsh-jev`.
+To remove it again: `dsh plugin --profile web remove dsh-jev-plugin`.
 
 ## Configure
 

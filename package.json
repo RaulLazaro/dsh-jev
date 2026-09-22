@@ -1,16 +1,16 @@
 {
-  "name": "dsh-jev",
+  "name": "dsh-jev-plugin",
   "version": "0.1.0",
   "description": "Ask Jev (TypeSafe System One) typed questions from DeepSeek Harness: batch judgements with probabilities, configured per user in Settings.",
   "type": "module",
   "author": "Raúl Lázaro Sánchez (https://github.com/RaulLazaro)",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/RaulLazaro/dsh-jev.git"
+    "url": "git+https://github.com/RaulLazaro/dsh-jev-plugin.git"
   },
-  "homepage": "https://github.com/RaulLazaro/dsh-jev#readme",
+  "homepage": "https://github.com/RaulLazaro/dsh-jev-plugin#readme",
   "bugs": {
-    "url": "https://github.com/RaulLazaro/dsh-jev/issues"
+    "url": "https://github.com/RaulLazaro/dsh-jev-plugin/issues"
   },
   "main": "lib/index.js",
   "exports": {

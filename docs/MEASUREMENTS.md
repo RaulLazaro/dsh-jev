@@ -1,6 +1,6 @@
 # Why this plugin exists — and the measurements behind it
 
-This document is the evidence for `dsh-jev`. It records what was measured, what
+This document is the evidence for `dsh-jev-plugin`. It records what was measured, what
 was falsified, and why the plugin does exactly one thing: give the agent a tool
 for batch judgements. It exists so the next person does not have to re-run any of
 it.

@@ -17,6 +17,8 @@ same data: **13x faster and 13.6x cheaper than a model at identical accuracy**, 
 48 s, $0.035). It *loses* to `grep` whenever the criterion is mechanical, so do
 not use it for that. The full evidence — including the use cases that were
 measured and then rejected — is in [`docs/MEASUREMENTS.md`](docs/MEASUREMENTS.md).
+What this plugin deliberately refuses to do, and the measurement behind each
+refusal, is in [`docs/DECISIONS.md`](docs/DECISIONS.md).
 
 ## What it registers
 
@@ -137,9 +139,43 @@ The `jev` settings namespace accepts:
 | `timeoutMs` | `60000` | Per-attempt request deadline. |
 | `maxStateChars` | `40000` | Rejects oversized `state` with a message naming the limit. |
 | `maxQuestions` | `200` | Rejects oversized question maps. |
+| `dataDir` | `<DSH_HOME>/dsh-jev` | Where the judgment ledger lives. |
+| `dailyCallLimit` | `500` | Judgments per local day; `0` disables the cap. |
+| `dailyTokenLimit` | `5000000` | Input tokens per local day; `0` disables the cap. |
 
 Provider, model and limit fields can also be set directly in
 `~/.dsh/settings.yaml`; the API key cannot, by design.
+
+## Spend, and the ledger behind it
+
+A Jev call is not free and, without a record, it is invisible. Measured on real
+traffic: **11,377 input tokens for a single judgment**, in a turn that can
+present 27 oversized results. Input is billed at $0.042 per million tokens and
+output is free, so cumulative input tokens *is* the cost.
+
+Every call — including a failed one — is appended to a JSONL ledger under
+`dataDir`, and the Settings card shows the running total for the local day:
+
+```
+Today · 42 judgments · 318,904 input tokens · $0.0134
+```
+
+Two caps read that ledger before each request. They exist because the failure
+mode of a metered feature is not an error, it is a surprise:
+
+- `dailyCallLimit` (default 500)
+- `dailyTokenLimit` (default 5,000,000 input tokens)
+
+Exceeding either refuses the call **before** anything is spent, with a message
+naming the number reached and the setting to raise. A cap of `0` means no cap.
+The ledger never blocks a judgment: if its directory cannot be prepared, it
+degrades to memory-only for that run rather than failing the call.
+
+Nothing here thresholds on a probability. Jev's numbers are measured to be
+**uncalibrated** — accuracy by confidence band came out 33% / 25% / 67% / 57%,
+including two wrong answers at 0.85 and 0.96 confidence — so they are safe to
+sort by and not to compare against a fixed number. See
+[`docs/DECISIONS.md`](docs/DECISIONS.md) for what that rules out.
 
 ## Operational notes
 

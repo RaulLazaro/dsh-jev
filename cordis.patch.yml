@@ -11,7 +11,7 @@
 #   custom          -> JEV_API_KEY
 - insert:
     - id: jev
-      name: dsh-jev
+      name: dsh-jev-plugin
       config:
         enabled: true
         provider: typesafe

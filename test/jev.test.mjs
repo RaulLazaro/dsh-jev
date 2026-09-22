@@ -1,5 +1,5 @@
 /**
- * Unit tests for the pure parts of dsh-jev.
+ * Unit tests for the pure parts of dsh-jev-plugin.
  *
  * Run: node --test
  *
